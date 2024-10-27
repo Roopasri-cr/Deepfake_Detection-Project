@@ -1,0 +1,76 @@
+import cv2  # For handling video files
+import requests  # For making API calls
+import tkinter as tk
+from tkinter import filedialog
+
+API_KEY = 'X-Deepware-Authentication'   # Replace with your actual API key
+API_URL = 'https://api.deepware.ai/api/v1/detect'
+RESULT_FAKE = 'fake'
+RESULT_REAL = 'real'
+  
+#def read_video_frames(video_path):
+#   cap = cv2.VideoCapture(video_path)  # Open the video file
+#   frames = []
+#   while cap.isOpened():  # Loop until the video is fully read
+#       ret, frame = cap.read()  # Read a frame
+#       if not ret:  # Stop if there are no more frames
+#           break
+#       frames.append(frame)  # Add the frame to the list
+#   cap.release()  # Close the video file
+#   return frames  # Return the list of frames
+
+def analyze_video_with_api(video_path):
+    headers = {
+        'Authorization': 'X-Deepware-Authentication',  # Updated to remove Bearer
+        'Content-Type': 'application/json'
+    }
+    
+    try:
+        with open(video_path, 'rb') as video_file:
+            files = {'file': video_file}
+            response = requests.post(API_URL, headers=headers, files=files)
+
+            # Print response details for debugging
+            print(f"Response status code: {response.status_code}")
+            print("Response text:", response.text)
+
+            response.raise_for_status()  # Raise an error for bad responses
+            return response.json()
+    except requests.RequestException as e:
+        print(f"Error during API request: {e}")
+        return None
+    except FileNotFoundError:
+        print(f"File not found: {video_path}")
+        return None
+
+def analyze_results(api_response):
+    if api_response is None:
+        return "Failed to analyze the video due to an error."
+    
+    # Check the API response for fake or real indications
+    if api_response.get('result') == RESULT_FAKE:
+        return "This video is likely AI-morphed."
+    else:
+        return "This video is likely authentic."
+
+def upload_video():
+    # Open a file dialog to select a video file
+    video_path = filedialog.askopenfilename(title="Select a Video File", filetypes=[("Video files", ".mp4;.avi;*.mov")])
+    if video_path:
+        api_response = analyze_video_with_api(video_path)
+        result_message = analyze_results(api_response)
+        print(result_message)
+
+def main():
+    root = tk.Tk()  # Create the main window
+    root.title("Video Analyzer")
+    root.geometry("300x100")  # Set the size of the window
+
+    upload_button = tk.Button(root, text="Upload Video", command=upload_video)
+    upload_button.pack(expand=True)
+
+    root.mainloop()  # Start the GUI event loop
+
+# Example usage
+if _name_ == "_main_":
+    main()
